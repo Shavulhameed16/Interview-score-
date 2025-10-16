@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybersecurity Interview Scorer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for custom theme and Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cyber-dark': '#0f172a', // Slate-900 or darker
+                        'cyber-accent': '#00ffff', // Cyan/Aqua Neon
+                        'cyber-secondary': '#8b5cf6', // Violet
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    keyframes: {
+                        'glow-pulse': {
+                            '0%, 100%': { transform: 'scale(1)', 'box-shadow': '0 0 5px rgba(0, 255, 255, 0.5)' },
+                            '50%': { transform: 'scale(1.05)', 'box-shadow': '0 0 20px #00ffff, 0 0 30px #00ffff' },
+                        }
+                    },
+                    animation: {
+                        'glow-pulse': 'glow-pulse 3s infinite ease-in-out',
+                    }
+                },
+            }
+        }
+    </script>
+    <style>
+        /* Fallback font import */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        .animated-circle {
+            width: 1.5rem;
+            height: 1.5rem;
+            background-color: #00ffff;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+            animation: move-and-glow 2s infinite alternate ease-in-out;
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        @keyframes move-and-glow {
+            0% {
+                transform: translateX(0) scale(0.8);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateX(10px) scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-cyber-dark min-h-screen text-gray-100 flex items-center justify-center font-sans p-4">
+
+    <div id="app-container" class="w-full max-w-4xl bg-gray-800/80 backdrop-blur-sm p-6 sm:p-10 rounded-xl shadow-2xl border border-cyber-accent/30">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white flex items-center justify-center">
+                <span id="circle-anim" class="animated-circle"></span>
+                <span class="text-cyber-accent">Let's know your score</span>
+            </h1>
+            <p id="sub-heading" class="mt-2 text-xl font-semibold text-cyber-secondary"></p>
+        </header>
+
+        <div id="content-area">
+            <!-- Content will be rendered here by JavaScript -->
+        </div>
+
+        <div id="loading-indicator" class="hidden fixed inset-0 bg-cyber-dark/80 z-50 flex flex-col items-center justify-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-cyber-accent"></div>
+            <p class="mt-4 text-lg text-cyber-accent animate-pulse">Analyzing your answer... (Offline Simulation)</p>
+        </div>
+
+        <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full border border-red-500">
+                <h3 class="text-xl font-bold text-red-400 mb-4">Simulation Error</h3>
+                <p id="message-text" class="text-gray-300"></p>
+                <button onclick="document.getElementById('message-box').classList.add('hidden');" class="mt-6 w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition">Close</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+       
+        const roles = {
+            'analyst': { 
+                name: 'Security Analyst', 
+                questions: [
+                    'What is the difference between a vulnerability and an exploit?', 
+                    'Describe the steps you would take to respond to a phishing incident.', 
+                    'Explain the concept of "Defense in Depth".',
+                    'What is the purpose of a SIEM system, and how do you utilize it daily?',
+                    'What is the kill chain methodology and how does it relate to incident response?',
+                    'Differentiate between false positives and false negatives in security alerting.',
+                    'Explain the difference between symmetric and asymmetric encryption.',
+                    'What is a man-in-the-middle (MITM) attack, and how is it prevented?',
+                    'Describe the steps for forensically acquiring data from a compromised workstation.',
+                    'What is a runbook or playbook in the context of a Security Operations Center?',
+                    'How do you handle a report of an insider threat?',
+                    'What are the key components of a good patch management program?',
+                    'Explain NIST\'s Incident Response Lifecycle.',
+                    'What are the common ports and protocols used for web traffic, and why is knowing them important?',
+                    'What is the principle of least privilege, and why is it critical?',
+                    'How do you investigate DLP (Data Loss Prevention) alerts?',
+                    'Define TTPs (Tactics, Techniques, and Procedures).',
+                    'What is the role of threat intelligence in an analyst\'s workflow?',
+                    'How do you secure API endpoints?',
+                    'What is hashing and what are common hashing algorithms?'
+                ] 
+            },
+            'pentester': { 
+                name: 'Penetration Tester', 
+                questions: [
+                    'What are the key phases of a penetration test?', 
+                    'Describe the OWASP Top 10 and give an example of one.', 
+                    'How would you test for a SQL Injection vulnerability?',
+                    'Differentiate between black-box, gray-box, and white-box testing.',
+                    'What is Cross-Site Scripting (XSS), and what are the three main types?',
+                    'Explain Server-Side Request Forgery (SSRF).',
+                    'How do you ensure your penetration testing activities remain ethical and legal?',
+                    'Describe the concept of privilege escalation and common techniques.',
+                    'What is a pivot attack, and what tools do you use for it?',
+                    'How do you assess the security of a wireless network?',
+                    'Explain how Buffer Overflow attacks work.',
+                    'What are common remediation strategies for Insecure Deserialization?',
+                    'Describe a time when you had to bypass a security control.',
+                    'What is the significance of the CVE system?',
+                    'How do you identify and exploit a Local File Inclusion (LFI) vulnerability?',
+                    'What are the steps for a successful social engineering assessment?',
+                    'Explain the use of fuzzing in vulnerability discovery.',
+                    'Name and describe three common network scanning tools.',
+                    'What is a timing attack, and how is it mitigated in web applications?',
+                    'How do you structure a high-quality penetration test report?'
+                ] 
+            },
+            'engineer': { 
+                name: 'Security Engineer', 
+                questions: [
+                    'How do you secure a cloud environment (e.g., AWS/Azure)?', 
+                    'Explain the purpose and function of a Web Application Firewall (WAF).', 
+                    'What is the role of a SIEM system in an enterprise environment?',
+                    'Differentiate between IDS (Intrusion Detection System) and IPS (Intrusion Prevention System).',
+                    'Describe the concept of Zero Trust Architecture.',
+                    'What is Immutable Infrastructure, and why is it beneficial for security?',
+                    'Explain the importance of IAM (Identity and Access Management) in a modern network.',
+                    'How do you implement multi-factor authentication (MFA) at scale?',
+                    'What is encryption in transit vs. encryption at rest?',
+                    'Describe how DDoS mitigation works at the network and application layers.',
+                    'Explain container security principles (e.g., Docker/Kubernetes).',
+                    'What are security baselines, and how do you enforce them?',
+                    'Differentiate between a VLAN and a VPN.',
+                    'How would you design a secure remote access solution for employees?',
+                    'What are common challenges in securing microservices architecture?',
+                    'Explain the purpose of a HSM (Hardware Security Module).',
+                    'What is Key Rotation, and how often should it occur?',
+                    'Describe the role of DevSecOps in the CI/CD pipeline.',
+                    'How do you manage secrets (e.g., API keys, passwords) securely?',
+                    'What is least privilege networking (micro-segmentation)?'
+                ] 
+            },
+        };
+
+        let currentRole = null;
+        let currentQuestionIndex = 0;
+        let interviewResults = [];
+        let isProcessing = false;
+
+        const contentArea = document.getElementById('content-area');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const subHeading = document.getElementById('sub-heading');
+
+
+        
+        function showMessage(title, text) {
+            const msgBox = document.getElementById('message-box');
+            document.getElementById('message-text').textContent = text;
+            msgBox.querySelector('h3').textContent = title;
+            msgBox.classList.remove('hidden');
+            msgBox.classList.add('flex');
+        }
+
+
+        function getMockFeedback(question) {
+            
+            switch (question) {
+                
+                case 'What is the difference between a vulnerability and an exploit?':
+                    return { 
+                        score: 9, 
+                        feedback: 'Excellent definition! You clearly distinguished between the passive flaw (vulnerability) and the active tool (exploit). For maximum points, next time consider quickly naming a real-world vulnerability (like Log4Shell) and a hypothetical exploit tool used against it.',
+                        modelAnswer: 'A **vulnerability** is a weakness or flaw in a system, design, or implementation that could be exploited to cause harm (e.g., a missing patch). An **exploit** is a piece of software, data, or command sequence that takes advantage of a specific vulnerability to cause unintended or unanticipated behavior on computer software, hardware, or network equipment. Exploits are the *means* used to compromise the system, while vulnerabilities are the *cause*.'
+                    };
+                case 'Describe the steps you would take to respond to a phishing incident.':
+                    return { 
+                        score: 10, 
+                        feedback: 'Very strong answer, grounded in a recognized framework like NIST. The key stages (Containment and Eradication) were clearly addressed. Ensure you emphasize the immediate isolation of the endpoint to stop lateral movement.',
+                        modelAnswer: 'I would follow the Incident Response Lifecycle (e.g., NIST framework): **Identification** (confirm the attack, isolate the user\'s machine), **Containment** (block sender IP/domain, delete malicious emails across the organization), **Eradication** (clean the compromised machine, reset passwords), **Recovery** (return the machine to the network, monitor for recurrence), and finally, **Lessons Learned** (update training, refine email filters, document the process).'
+                    };
+                
+                
+                case 'What are the key phases of a penetration test?':
+                    return { 
+                        score: 9, 
+                        feedback: 'Solid, textbook understanding of the methodology. The inclusion of *Post-Exploitation* and *Reporting* shows professional experience. To improve, briefly mention the importance of *client sign-off* during the planning phase.',
+                        modelAnswer: 'The typical phases are **Planning and Preparation** (defining scope, rules of engagement), **Reconnaissance/Information Gathering** (passive and active collection of target data), **Vulnerability Analysis** (scanning and identifying weaknesses), **Exploitation** (gaining access, elevating privileges), **Post-Exploitation** (maintaining access, pivoting, data collection), and **Reporting and Remediation** (documenting findings, providing actionable fixes).'
+                    };
+                case 'Describe the OWASP Top 10 and give an example of one.':
+                    return { 
+                        score: 9, 
+                        feedback: 'Clear explanation of the purpose and excellent choice of example (Injection). Stating the official category code (A03) adds a professional touch. Next time, mention how frequently the list is updated (usually every 3-4 years).',
+                        modelAnswer: 'The **OWASP Top 10** is a standard awareness document for developers and security professionals, representing the ten most critical security risks to web applications. A key example is **A03: Injection**. This occurs when untrusted data is sent to an interpreter as part of a command or query. SQL Injection (SQLi) is the most common, allowing an attacker to insert malicious SQL code via an input field to compromise the database.'
+                    };
+
+                
+                case 'How do you secure a cloud environment (e.g., AWS/Azure)?':
+                    return { 
+                        score: 10, 
+                        feedback: 'Very professional answer that correctly starts with the Shared Responsibility Model. Listing core focus areas like IAM and network segmentation is spot-on. You could enhance this by mentioning specific CSPM (Cloud Security Posture Management) tools.',
+                        modelAnswer: 'Securing the cloud relies heavily on the **Shared Responsibility Model**. My focus would be on: **IAM** (least privilege access, MFA, role separation), **Network Security** (VPC/VNet segmentation, security groups/NSGs), **Data Protection** (encryption at rest/in transit), **Monitoring** (CloudTrail/Azure Monitor, integration with SIEM), and **Configuration Management** (using Infrastructure as Code, security baselines).'
+                    };
+                case 'Explain the purpose and function of a Web Application Firewall (WAF).':
+                    return { 
+                        score: 9, 
+                        feedback: 'Clear and technically accurate, covering both the *purpose* (protection) and *function* (Layer 7 filtering). To make it more detailed, quickly differentiate between network-based, host-based, and cloud-based WAFs.',
+                        modelAnswer: 'A **WAF** is a security control deployed in front of web applications to monitor, filter, and block HTTP traffic to and from a web service. Its primary purpose is to protect applications from common attacks like SQL Injection, XSS, and DDoS. It functions by applying a set of rules (signatures or anomaly detection) to filter malicious requests, operating at **Layer 7** (Application Layer) of the OSI model.'
+                    };
+
+        
+                default:
+                    const score = Math.floor(Math.random() * (10 - 7 + 1)) + 7; // Random score between 7 and 10
+                    const feedback = "Solid foundational response. To elevate this answer further, try structuring your thoughts around a specific framework or toolset (e.g., NIST, MITRE ATT&CK, specific vendor products) to demonstrate practical application in an enterprise setting.";
+                    const modelAnswer = `[MODEL ANSWER - OFFLINE SIMULATION] This is a complex topic requiring deep technical insight. A strong answer would typically cover the 'Why', 'How', and 'What' (tools/frameworks) related to the question. Focus on practical implementation and trade-offs.`;
+
+                    return { score, feedback, modelAnswer };
+            }
+        }
+
+        
+
+        function renderInitialScreen() {
+            subHeading.textContent = "Cybersecurity Interview Scorer (Offline Mode)";
+            contentArea.innerHTML = `
+                <div class="text-center p-8 border border-gray-700/50 rounded-lg shadow-inner bg-gray-900/50">
+                    <p class="text-lg text-gray-300 mb-6">Test your knowledge for key roles in the cybersecurity field. (Scores are simulated)</p>
+                    <button onclick="renderRoleSelection()"
+                        class="px-8 py-3 text-lg font-bold bg-cyber-accent text-cyber-dark rounded-xl shadow-xl hover:bg-opacity-90 transition transform hover:scale-[1.02] active:scale-95 duration-200 border-b-4 border-cyber-secondary animate-glow-pulse">
+                        Start Cyber Security Interview Prep
+                    </button>
+                </div>
+            `;
+            
+            interviewResults = [];
+            currentRole = null;
+            currentQuestionIndex = 0;
+        }
+
+        function renderRoleSelection() {
+            subHeading.textContent = "Select your Cybersecurity Role";
+
+            const roleCards = Object.entries(roles).map(([key, role]) => `
+                <div onclick="selectRole('${key}')"
+                    class="role-card p-6 border border-gray-700 rounded-xl cursor-pointer hover:border-cyber-accent/80 transition duration-300 transform hover:scale-[1.03] bg-gray-900 shadow-lg hover:shadow-cyber-accent/50">
+                    <h3 class="text-xl font-semibold text-cyber-accent">${role.name}</h3>
+                    <p class="text-gray-400 mt-2 text-sm">${role.questions.length} Core Questions</p>
+                </div>
+            `).join('');
+
+            contentArea.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    ${roleCards}
+                </div>
+                <div class="mt-8 text-center">
+                    <button onclick="renderInitialScreen()" class="px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-100 transition duration-200">← Back to Start</button>
+                </div>
+            `;
+        }
+
+        window.selectRole = (key) => {
+            currentRole = roles[key];
+            currentQuestionIndex = 0;
+            renderQuestion();
+        };
+
+        function renderQuestion() {
+            if (!currentRole || currentQuestionIndex >= currentRole.questions.length) {
+                renderFinalResults();
+                return;
+            }
+
+            const question = currentRole.questions[currentQuestionIndex];
+            const roleName = currentRole.name;
+            const qNumber = currentQuestionIndex + 1;
+            const totalQs = currentRole.questions.length;
+
+            subHeading.textContent = `${roleName} - Question ${qNumber} of ${totalQs}`;
+
+            contentArea.innerHTML = `
+                <div class="p-6 bg-gray-900 border border-cyber-secondary/50 rounded-lg shadow-xl mb-6">
+                    <p class="text-lg font-medium text-white">${qNumber}. ${question}</p>
+                </div>
+                <div class="mb-4">
+                    <label for="user-answer" class="block text-sm font-medium text-gray-300 mb-2">Your Answer:</label>
+                    <textarea id="user-answer" rows="8" class="w-full p-4 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:ring-cyber-accent focus:border-cyber-accent transition duration-150"></textarea>
+                </div>
+                <div class="flex justify-between items-center">
+                    <button onclick="renderRoleSelection()" class="px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-100 transition">← Change Role</button>
+                    <button id="submit-btn" onclick="submitAnswer()" class="px-6 py-3 bg-cyber-secondary hover:bg-purple-600 text-white font-bold rounded-lg shadow-md transition duration-200 transform active:scale-95">
+                        Submit Answer
+                    </button>
+                </div>
+            `;
+        }
+
+        window.submitAnswer = async () => {
+            if (isProcessing) return;
+
+            const answer = document.getElementById('user-answer').value.trim();
+            if (!answer) {
+                showMessage("Input Required", "Please type your answer before submitting.");
+                return;
+            }
+
+            const question = currentRole.questions[currentQuestionIndex];
+
+            
+            isProcessing = true;
+            loadingIndicator.classList.remove('hidden');
+
+            try {
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+            
+                const feedbackData = getMockFeedback(question);
+
+                interviewResults.push({
+                    question: question,
+                    userAnswer: answer,
+                    ...feedbackData
+                });
+
+                renderFeedback(feedbackData);
+            } catch (error) {
+                
+                showMessage("Simulation Failed", "An internal error occurred during processing simulation.");
+            } finally {
+            
+                isProcessing = false;
+                loadingIndicator.classList.add('hidden');
+            }
+        };
+
+        function renderFeedback(feedbackData) {
+            const qNumber = currentQuestionIndex + 1;
+            const totalQs = currentRole.questions.length;
+            const isLastQuestion = qNumber === totalQs;
+            const nextButtonText = isLastQuestion ? "View Final Score" : "Next Question";
+
+            subHeading.textContent = `Feedback for Question ${qNumber}`;
+
+            contentArea.innerHTML = `
+                <div class="space-y-6">
+                    
+                    <div class="p-6 rounded-lg border border-cyber-accent/50 shadow-lg bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between">
+                        <h3 class="text-xl font-bold text-white mb-2 sm:mb-0">${currentRole.name} Score:</h3>
+                        <div class="text-5xl font-extrabold" style="color: hsl(${feedbackData.score * 10}, 80%, 60%);">
+                            ${feedbackData.score} <span class="text-xl text-gray-400">/ 10</span>
+                        </div>
+                    </div>
+
+                    
+                    <div class="p-4 border border-gray-700 rounded-lg bg-gray-800">
+                        <h4 class="text-lg font-semibold text-cyber-secondary mb-2">Detailed Feedback:</h4>
+                        <p class="text-gray-300">${feedbackData.feedback}</p>
+                    </div>
+
+                    
+                    <div class="p-4 border border-gray-700 rounded-lg bg-gray-800">
+                        <h4 class="text-lg font-semibold text-green-400 mb-2">Suggested Model Answer:</h4>
+                        <p class="text-gray-300 whitespace-pre-wrap">${feedbackData.modelAnswer}</p>
+                    </div>
+
+                    
+                    <div class="flex justify-end mt-6">
+                        <button onclick="moveToNextQuestion()" class="px-6 py-3 bg-cyber-accent text-cyber-dark font-bold rounded-lg shadow-xl hover:bg-opacity-90 transition duration-200 transform active:scale-95">
+                            ${nextButtonText}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.moveToNextQuestion = () => {
+            currentQuestionIndex++;
+            renderQuestion();
+        };
+
+        function renderFinalResults() {
+            subHeading.textContent = `Final Score for ${currentRole.name} Interview (Simulated)`;
+
+            const totalScore = interviewResults.reduce((acc, result) => acc + result.score, 0);
+            const averageScore = (totalScore / interviewResults.length).toFixed(1);
+
+            const resultRows = interviewResults.map((res, index) => `
+                <div class="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-900">
+                    <h4 class="text-lg font-semibold text-cyber-accent/80">Q${index + 1}: ${res.question}</h4>
+                    <p class="text-lg font-bold mt-1" style="color: hsl(${res.score * 10}, 80%, 60%);">Score: ${res.score} / 10</p>
+                    <details class="mt-2 text-gray-400 cursor-pointer">
+                        <summary class="font-medium text-sm text-gray-200 hover:text-white transition">Review Feedback and Model Answer</summary>
+                        <div class="mt-2 pl-4 border-l border-gray-600 space-y-3">
+                            <p><strong>Your Answer:</strong> <span class="text-gray-300">${res.userAnswer}</span></p>
+                            <p><strong>Feedback:</strong> <span class="text-gray-300">${res.feedback}</span></p>
+                            <p><strong>Model Answer:</strong> <span class="text-green-400 whitespace-pre-wrap">${res.modelAnswer}</span></p>
+                        </div>
+                    </details>
+                </div>
+            `).join('');
+
+            contentArea.innerHTML = `
+                <div class="text-center mb-8 p-6 rounded-xl border-2 border-cyber-accent shadow-xl bg-gray-900">
+                    <p class="text-xl text-gray-300">Your Average Performance:</p>
+                    <p class="text-7xl font-extrabold mt-2" style="color: hsl(${averageScore * 10}, 80%, 60%);">
+                        ${averageScore}
+                    </p>
+                    <p class="text-xl font-medium text-white mt-1">out of 10</p>
+                </div>
+
+                <h3 class="text-2xl font-bold text-cyber-secondary mb-4 border-b border-gray-700 pb-2">Question Breakdown</h3>
+                ${resultRows}
+
+                <div class="mt-8 text-center">
+                    <button onclick="renderInitialScreen()" class="px-6 py-3 bg-cyber-secondary hover:bg-purple-600 text-white font-bold rounded-lg shadow-md transition duration-200 transform active:scale-95">
+                        Start a New Interview
+                    </button>
+                </div>
+            `;
+        }
+
+        
+
+        window.onload = renderInitialScreen;
+
+       
+        window.renderRoleSelection = renderRoleSelection;
+        window.renderInitialScreen = renderInitialScreen;
+
+    </script>
+</body>
+</html>
